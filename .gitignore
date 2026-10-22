@@ -1,7 +1,0 @@
-.gitignore
-bin/
-obj/
-.vs/
-*.user
-*.suo
-packages/
