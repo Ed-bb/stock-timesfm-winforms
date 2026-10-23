@@ -87,11 +87,10 @@ namespace BwetForecasterWinForms
                 var data = JObject.Parse(responseJson)["forecasts"];
                 var results = new Dictionary<string, ForecastResult>();
 
-                foreach (var item in data)
+                foreach (var item in data.Children<JProperty>())
                 {
-                    var ticker = item.Path.Split('.').Last();
                     var forecast = JsonConvert.DeserializeObject<ForecastResult>(item.Value.ToString());
-                    results[ticker] = forecast;
+                    results[item.Name] = forecast;
                 }
 
                 return results;
