@@ -44,6 +44,13 @@ def health():
         "timestamp": datetime.now().isoformat()
     })
 
+def download(ticker, period):
+    """Download history with flat (single-level) columns across yfinance versions"""
+    data = yf.download(ticker, period=period, progress=False)
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
+    return data
+
 @app.route("/api/forecast", methods=["POST"])
 def forecast():
     """Generate forecast for a stock"""
@@ -57,7 +64,7 @@ def forecast():
             return jsonify({"error": "Forecaster not initialized"}), 503
         
         # Fetch data
-        stock_data = yf.download(ticker, period=period, progress=False)
+        stock_data = download(ticker, period)
         if stock_data.empty or len(stock_data) < MIN_DATA_POINTS:
             return jsonify({
                 "error": f"Insufficient data for {ticker}. Need at least {MIN_DATA_POINTS} points."
@@ -138,7 +145,7 @@ def current_price():
     """Get current price for a ticker"""
     try:
         ticker = request.args.get("ticker", DEFAULT_TICKER).upper()
-        data = yf.download(ticker, period="1d", progress=False)
+        data = download(ticker, "1d")
         
         if data.empty:
             return jsonify({"error": f"No data for {ticker}"}), 404
@@ -156,7 +163,7 @@ def historical():
         ticker = request.args.get("ticker", DEFAULT_TICKER).upper()
         period = request.args.get("period", HISTORICAL_PERIOD)
         
-        data = yf.download(ticker, period=period, progress=False)
+        data = download(ticker, period)
         if data.empty:
             return jsonify({"error": f"No data for {ticker}"}), 404
         
