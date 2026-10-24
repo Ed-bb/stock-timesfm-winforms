@@ -20,7 +20,9 @@ namespace BwetForecasterWinForms
         {
             InitializeComponent();
 
-            var apiUrl = ConfigurationManager.AppSettings["ApiBaseUrl"] ?? "http://127.0.0.1:5000";
+            var apiUrl = Environment.GetEnvironmentVariable("services__backend__http__0")
+                ?? ConfigurationManager.AppSettings["ApiBaseUrl"]
+                ?? "http://127.0.0.1:5000";
             _defaultTicker = (ConfigurationManager.AppSettings["DefaultTicker"] ?? "BWET").ToUpperInvariant();
             _horizon = int.TryParse(ConfigurationManager.AppSettings["ForecastHorizon"], out var h) ? h : 30;
             int refreshMs = int.TryParse(ConfigurationManager.AppSettings["RefreshInterval"], out var r) ? r : 300000;

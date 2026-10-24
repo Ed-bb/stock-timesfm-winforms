@@ -7,7 +7,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "frontend", "frontend", "{CE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BwetForecasterWinForms", "frontend\BwetForecasterWinForms.csproj", "{C7DC2718-7676-474E-B046-936A59E3E745}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "ForecastBackend", "backend\ForecastBackend.pyproj", "{8D2F4B6A-1C3E-4A5B-9F70-2E6D8C1A4B93}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{5B1E7A52-3C94-4D8A-9E0F-6A2D41C7B8E3}"
+	ProjectSection(SolutionItems) = preProject
+		backend\.env.example = backend\.env.example
+		backend\config.py = backend\config.py
+		backend\forecast_api.py = backend\forecast_api.py
+		backend\README.md = backend\README.md
+		backend\requirements.txt = backend\requirements.txt
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockTimesFM.AppHost", "apphost\StockTimesFM.AppHost.csproj", "{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,12 +40,18 @@ Global
 		{C7DC2718-7676-474E-B046-936A59E3E745}.Release|x64.Build.0 = Release|Any CPU
 		{C7DC2718-7676-474E-B046-936A59E3E745}.Release|x86.ActiveCfg = Release|Any CPU
 		{C7DC2718-7676-474E-B046-936A59E3E745}.Release|x86.Build.0 = Release|Any CPU
-		{8D2F4B6A-1C3E-4A5B-9F70-2E6D8C1A4B93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8D2F4B6A-1C3E-4A5B-9F70-2E6D8C1A4B93}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8D2F4B6A-1C3E-4A5B-9F70-2E6D8C1A4B93}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{8D2F4B6A-1C3E-4A5B-9F70-2E6D8C1A4B93}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8D2F4B6A-1C3E-4A5B-9F70-2E6D8C1A4B93}.Release|x64.ActiveCfg = Release|Any CPU
-		{8D2F4B6A-1C3E-4A5B-9F70-2E6D8C1A4B93}.Release|x86.ActiveCfg = Release|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Debug|x64.Build.0 = Debug|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Debug|x86.Build.0 = Debug|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Release|x64.ActiveCfg = Release|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Release|x64.Build.0 = Release|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Release|x86.ActiveCfg = Release|Any CPU
+		{3F6A9C1E-7D24-4B85-A1E0-5C8B2D94F6A7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
