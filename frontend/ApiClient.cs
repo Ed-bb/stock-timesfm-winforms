@@ -33,6 +33,21 @@ namespace BwetForecasterWinForms
             }
         }
 
+        public async Task<HistoryResult> GetHistoryAsync(string ticker, string period)
+        {
+            var url = $"{_baseUrl}/api/historical?ticker={Uri.EscapeDataString(ticker)}&period={Uri.EscapeDataString(period)}";
+            var response = await _httpClient.GetAsync(url);
+            var responseJson = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = JObject.Parse(responseJson)["error"]?.ToString();
+                throw new Exception(error ?? "History request failed");
+            }
+
+            return JsonConvert.DeserializeObject<HistoryResult>(responseJson);
+        }
+
         public async Task<ForecastResult> GetForecastAsync(string ticker, int horizon = 30)
         {
             try
@@ -100,6 +115,18 @@ namespace BwetForecasterWinForms
                 throw new Exception($"Error getting batch forecast: {ex.Message}", ex);
             }
         }
+    }
+
+    public class HistoryResult
+    {
+        [JsonProperty("ticker")]
+        public string Ticker { get; set; }
+
+        [JsonProperty("dates")]
+        public List<string> Dates { get; set; }
+
+        [JsonProperty("prices")]
+        public List<decimal> Prices { get; set; }
     }
 
     public class ForecastResult

@@ -96,14 +96,19 @@ def forecast():
         # Convert back to prices
         forecast_prices = current_price * np.cumprod(1 + forecast_returns)
         quantiles_prices = np.zeros((horizon, 9))
+        # Per-step deviations from the median are treated as independent and
+        # accumulated in quadrature (random-walk), rather than compounding every
+        # step at its extreme quantile, which hugely overstates the spread.
+        median_idx = 4
         for i in range(9):
-            quantiles_prices[:, i] = current_price * np.cumprod(1 + quantiles_returns[:, i])
+            dev = quantiles_returns[:, i] - quantiles_returns[:, median_idx]
+            cum_dev = np.sign(dev) * np.sqrt(np.cumsum(dev ** 2))
+            quantiles_prices[:, i] = forecast_prices * np.exp(cum_dev)
         
         # Generate dates
-        forecast_dates = pd.date_range(
+        forecast_dates = pd.bdate_range(
             start=pd.Timestamp(stock_data.index[-1]) + timedelta(days=1),
-            periods=horizon,
-            freq='D'
+            periods=horizon
         )
         
         return jsonify({
