@@ -102,7 +102,7 @@ def forecast():
         median_idx = 4
         for i in range(9):
             dev = quantiles_returns[:, i] - quantiles_returns[:, median_idx]
-            cum_dev = np.sign(dev) * np.sqrt(np.cumsum(dev ** 2))
+            cum_dev = np.sign(i - median_idx) * np.sqrt(np.cumsum(dev ** 2))
             quantiles_prices[:, i] = forecast_prices * np.exp(cum_dev)
         
         # Generate dates
