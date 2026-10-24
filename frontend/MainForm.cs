@@ -1,6 +1,6 @@
 using System;
-using System.Configuration;
 using System.Drawing;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using OxyPlot;
@@ -17,24 +17,63 @@ namespace BwetForecasterWinForms
         private readonly string _defaultTicker;
         private readonly int _horizon;
         private readonly System.Windows.Forms.Timer _refreshTimer;
+        private readonly TickerHistory _tickerHistory;
+        private readonly ToolTip _toolTip;
         private ForecastResult _forecast;
         private HistoryResult _history;
+        private bool _isLoading;
 
         public MainForm()
         {
             InitializeComponent();
 
             var apiUrl = Environment.GetEnvironmentVariable("services__backend__http__0")
-                ?? ConfigurationManager.AppSettings["ApiBaseUrl"]
+                ?? SettingsManager.GetAppSetting("ApiBaseUrl")
                 ?? "http://127.0.0.1:5000";
-            _defaultTicker = (ConfigurationManager.AppSettings["DefaultTicker"] ?? "BWET").ToUpperInvariant();
-            _horizon = int.TryParse(ConfigurationManager.AppSettings["ForecastHorizon"], out var h) ? h : 30;
-            int refreshMs = int.TryParse(ConfigurationManager.AppSettings["RefreshInterval"], out var r) ? r : 300000;
+            _defaultTicker = (SettingsManager.GetAppSetting("DefaultTicker") ?? "BWET").ToUpperInvariant();
+            _horizon = int.TryParse(SettingsManager.GetAppSetting("ForecastHorizon"), out var h) ? h : 30;
+            int refreshMs = int.TryParse(SettingsManager.GetAppSetting("RefreshInterval"), out var r) ? r : 300000;
 
             _apiClient = new ApiClient(apiUrl);
+            _tickerHistory = new TickerHistory();
+            _toolTip = new ToolTip();
+            RefreshTickerHistory();
             tickerBox.Text = _defaultTicker;
 
             forecastButton.Click += async (s, e) => await RunForecastAsync(tickerBox.Text);
+            tickerBox.KeyDown += async (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    await RunForecastAsync(tickerBox.Text);
+                }
+                else if (e.KeyCode == Keys.Escape)
+                {
+                    e.SuppressKeyPress = true;
+                    tickerBox.Text = string.Empty;
+                }
+            };
+            KeyDown += (s, e) =>
+            {
+                if (e.Control && e.KeyCode == Keys.L)
+                {
+                    e.SuppressKeyPress = true;
+                    tickerBox.Focus();
+                    tickerBox.SelectAll();
+                }
+            };
+            clearTickerButton.Click += (s, e) =>
+            {
+                tickerBox.Text = string.Empty;
+                tickerBox.Focus();
+            };
+            clearHistoryButton.Click += (s, e) =>
+            {
+                _tickerHistory.Clear();
+                RefreshTickerHistory();
+                SetStatus("Ticker history cleared", Color.DimGray);
+            };
             rangeBox.SelectedIndexChanged += async (s, e) => await OnRangeChangedAsync();
             resetZoomButton.Click += (s, e) =>
             {
@@ -42,16 +81,44 @@ namespace BwetForecasterWinForms
                 plotView.InvalidatePlot(false);
             };
             Shown += async (s, e) => await RunForecastAsync(_defaultTicker);
+            Shown += (s, e) =>
+            {
+                var bounds = SettingsManager.LoadWindowBounds();
+                if (bounds.HasValue)
+                {
+                    Bounds = bounds.Value;
+                    StartPosition = FormStartPosition.Manual;
+                }
+            };
 
             _refreshTimer = new System.Windows.Forms.Timer { Interval = refreshMs };
             _refreshTimer.Tick += async (s, e) => await RunForecastAsync(tickerBox.Text);
             _refreshTimer.Start();
 
-            FormClosed += (s, e) => _refreshTimer.Dispose();
+            FormClosing += (s, e) =>
+            {
+                var bounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+                SettingsManager.SaveWindowBounds(bounds);
+            };
+            FormClosed += (s, e) =>
+            {
+                _refreshTimer.Dispose();
+                _toolTip.Dispose();
+            };
+
+            _toolTip.SetToolTip(tickerBox, "Enter a stock ticker. Recent searches appear in this list.");
+            _toolTip.SetToolTip(clearTickerButton, "Clear the ticker input");
+            _toolTip.SetToolTip(forecastButton, "Run a forecast for the selected ticker");
+            _toolTip.SetToolTip(clearHistoryButton, "Remove all saved recent tickers");
+            _toolTip.SetToolTip(rangeBox, "Choose the historical price range");
+            _toolTip.SetToolTip(resetZoomButton, "Reset the chart zoom");
         }
 
         private async Task RunForecastAsync(string ticker)
         {
+            if (_isLoading)
+                return;
+
             ticker = (ticker ?? string.Empty).Trim().ToUpperInvariant();
             if (ticker.Length == 0)
             {
@@ -59,7 +126,9 @@ namespace BwetForecasterWinForms
                 return;
             }
 
+            _isLoading = true;
             forecastButton.Enabled = false;
+            loadingIndicator.Visible = true;
             SetStatus($"Loading {ticker}...", Color.Gold);
 
             try
@@ -78,7 +147,10 @@ namespace BwetForecasterWinForms
                 }
 
                 tickerBox.Text = _forecast.Ticker ?? ticker;
+                _tickerHistory.Add(ticker);
+                RefreshTickerHistory();
                 ShowForecast(_forecast);
+                lastUpdatedLabel.Text = $"Updated: {DateTime.Now:g}";
                 SetStatus(_history == null ? "Ready (price history unavailable)" : "Ready", Color.LimeGreen);
             }
             catch (Exception ex)
@@ -88,6 +160,8 @@ namespace BwetForecasterWinForms
             finally
             {
                 forecastButton.Enabled = true;
+                loadingIndicator.Visible = false;
+                _isLoading = false;
             }
         }
 
@@ -226,17 +300,26 @@ namespace BwetForecasterWinForms
 
         private async Task OnRangeChangedAsync()
         {
-            if (_forecast == null)
+            if (_forecast == null || _isLoading)
                 return;
 
+            _isLoading = true;
+            loadingIndicator.Visible = true;
+            SetStatus("Loading price history...", Color.Gold);
             try
             {
                 _history = await _apiClient.GetHistoryAsync(_forecast.Ticker, SelectedPeriod());
                 ShowChart(_forecast);
+                SetStatus("Ready", Color.LimeGreen);
             }
             catch (Exception ex)
             {
                 SetStatus("Error: " + ex.Message, Color.Red);
+            }
+            finally
+            {
+                loadingIndicator.Visible = false;
+                _isLoading = false;
             }
         }
 
@@ -244,6 +327,25 @@ namespace BwetForecasterWinForms
         {
             statusLabel.Text = message;
             statusLabel.ForeColor = color;
+            statusLabel.BackColor = color == Color.Red
+                ? Color.MistyRose
+                : color == Color.LimeGreen
+                    ? Color.Honeydew
+                    : color == Color.Gold
+                        ? Color.LemonChiffon
+                        : Color.Gainsboro;
+        }
+
+        private void RefreshTickerHistory()
+        {
+            var tickers = _tickerHistory.GetRecentTickers();
+            var source = new AutoCompleteStringCollection();
+            source.AddRange(tickers.ToArray());
+            tickerBox.AutoCompleteCustomSource = source;
+            tickerBox.BeginUpdate();
+            tickerBox.Items.Clear();
+            tickerBox.Items.AddRange(tickers.Cast<object>().ToArray());
+            tickerBox.EndUpdate();
         }
     }
 }
