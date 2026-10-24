@@ -1,4 +1,11 @@
 """TimesFM Flask API Server"""
+import sys
+
+# Redirected Windows consoles default to cp1252, which can't print the emoji below
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8")
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import numpy as np
