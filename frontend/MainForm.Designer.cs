@@ -6,6 +6,8 @@ namespace BwetForecasterWinForms
         private System.Windows.Forms.TextBox tickerBox;
         private System.Windows.Forms.Button forecastButton;
         private System.Windows.Forms.Label statusLabel;
+        private System.Windows.Forms.ComboBox rangeBox;
+        private System.Windows.Forms.Button resetZoomButton;
         private System.Windows.Forms.Label priceLabel;
         private System.Windows.Forms.Label forecastLabel;
         private System.Windows.Forms.Label changeLabel;
@@ -37,6 +39,9 @@ namespace BwetForecasterWinForms
             this.tickerBox = new System.Windows.Forms.TextBox();
             this.forecastButton = new System.Windows.Forms.Button();
             this.statusLabel = new System.Windows.Forms.Label();
+            this.rangeBox = new System.Windows.Forms.ComboBox();
+            this.resetZoomButton = new System.Windows.Forms.Button();
+            var rangeLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.detailsGrid)).BeginInit();
             infoPanel.SuspendLayout();
             topPanel.SuspendLayout();
@@ -105,17 +110,37 @@ namespace BwetForecasterWinForms
             this.statusLabel.Text = "Starting...";
             this.statusLabel.AutoSize = true;
             this.statusLabel.ForeColor = System.Drawing.Color.Gray;
-            this.statusLabel.Location = new System.Drawing.Point(310, 17);
+            this.statusLabel.Location = new System.Drawing.Point(600, 17);
+
+            rangeLabel.Text = "History:";
+            rangeLabel.AutoSize = true;
+            rangeLabel.Location = new System.Drawing.Point(310, 17);
+
+            this.rangeBox.Location = new System.Drawing.Point(375, 14);
+            this.rangeBox.Width = 70;
+            this.rangeBox.Name = "rangeBox";
+            this.rangeBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.rangeBox.Items.AddRange(new object[] { "1M", "3M", "6M", "1Y", "2Y" });
+            this.rangeBox.SelectedItem = "6M";
+
+            this.resetZoomButton.Text = "Reset zoom";
+            this.resetZoomButton.Location = new System.Drawing.Point(465, 12);
+            this.resetZoomButton.Width = 110;
+            this.resetZoomButton.Height = 28;
+            this.resetZoomButton.Name = "resetZoomButton";
 
             topPanel.Controls.Add(tickerLabel);
             topPanel.Controls.Add(this.tickerBox);
             topPanel.Controls.Add(this.forecastButton);
+            topPanel.Controls.Add(rangeLabel);
+            topPanel.Controls.Add(this.rangeBox);
+            topPanel.Controls.Add(this.resetZoomButton);
             topPanel.Controls.Add(this.statusLabel);
 
             // MainForm
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1200, 800);
-            this.Text = "BWET Stock Forecaster - TimesFM";
+            this.Text = "Stock Forecaster - TimesFM";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Controls.Add(this.plotView);
             this.Controls.Add(this.detailsGrid);

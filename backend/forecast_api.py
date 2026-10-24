@@ -1,4 +1,11 @@
 """TimesFM Flask API Server"""
+import sys
+
+# Redirected Windows consoles default to cp1252, which can't print the emoji below
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8")
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import numpy as np
@@ -44,6 +51,13 @@ def health():
         "timestamp": datetime.now().isoformat()
     })
 
+def download(ticker, period):
+    """Download history with flat (single-level) columns across yfinance versions"""
+    data = yf.download(ticker, period=period, progress=False)
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
+    return data
+
 @app.route("/api/forecast", methods=["POST"])
 def forecast():
     """Generate forecast for a stock"""
@@ -57,7 +71,7 @@ def forecast():
             return jsonify({"error": "Forecaster not initialized"}), 503
         
         # Fetch data
-        stock_data = yf.download(ticker, period=period, progress=False)
+        stock_data = download(ticker, period)
         if stock_data.empty or len(stock_data) < MIN_DATA_POINTS:
             return jsonify({
                 "error": f"Insufficient data for {ticker}. Need at least {MIN_DATA_POINTS} points."
@@ -82,14 +96,19 @@ def forecast():
         # Convert back to prices
         forecast_prices = current_price * np.cumprod(1 + forecast_returns)
         quantiles_prices = np.zeros((horizon, 9))
+        # Per-step deviations from the median are treated as independent and
+        # accumulated in quadrature (random-walk), rather than compounding every
+        # step at its extreme quantile, which hugely overstates the spread.
+        median_idx = 4
         for i in range(9):
-            quantiles_prices[:, i] = current_price * np.cumprod(1 + quantiles_returns[:, i])
+            dev = quantiles_returns[:, i] - quantiles_returns[:, median_idx]
+            cum_dev = np.sign(i - median_idx) * np.sqrt(np.cumsum(dev ** 2))
+            quantiles_prices[:, i] = forecast_prices * np.exp(cum_dev)
         
         # Generate dates
-        forecast_dates = pd.date_range(
+        forecast_dates = pd.bdate_range(
             start=pd.Timestamp(stock_data.index[-1]) + timedelta(days=1),
-            periods=horizon,
-            freq='D'
+            periods=horizon
         )
         
         return jsonify({
@@ -138,7 +157,7 @@ def current_price():
     """Get current price for a ticker"""
     try:
         ticker = request.args.get("ticker", DEFAULT_TICKER).upper()
-        data = yf.download(ticker, period="1d", progress=False)
+        data = download(ticker, "1d")
         
         if data.empty:
             return jsonify({"error": f"No data for {ticker}"}), 404
@@ -156,7 +175,7 @@ def historical():
         ticker = request.args.get("ticker", DEFAULT_TICKER).upper()
         period = request.args.get("period", HISTORICAL_PERIOD)
         
-        data = yf.download(ticker, period=period, progress=False)
+        data = download(ticker, period)
         if data.empty:
             return jsonify({"error": f"No data for {ticker}"}), 404
         
