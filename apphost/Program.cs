@@ -5,6 +5,7 @@ var backend = builder.AddPythonApp("backend", "../backend", "forecast_api.py")
     .WithPip()
     .WithHttpEndpoint(env: "FLASK_PORT")
     .WithEnvironment("FLASK_HOST", "127.0.0.1")
+    .WithEnvironment("TIMESFM_DEVICE", Environment.GetEnvironmentVariable("TIMESFM_DEVICE") ?? "cpu")
     .WithHttpHealthCheck("/api/health");
 
 // The UI reads the backend URL from services__backend__http__0
