@@ -41,8 +41,7 @@ namespace BwetForecasterWinForms
 
             if (!response.IsSuccessStatusCode)
             {
-                var error = JObject.Parse(responseJson)["error"]?.ToString();
-                throw new Exception(error ?? "History request failed");
+                throw CreateApiException(responseJson, response);
             }
 
             return JsonConvert.DeserializeObject<HistoryResult>(responseJson);
@@ -67,8 +66,7 @@ namespace BwetForecasterWinForms
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var error = JObject.Parse(responseJson)["error"]?.ToString();
-                    throw new Exception(error ?? "API request failed");
+                    throw CreateApiException(responseJson, response);
                 }
 
                 var result = JsonConvert.DeserializeObject<ForecastResult>(responseJson);
@@ -78,6 +76,21 @@ namespace BwetForecasterWinForms
             {
                 throw new Exception($"Error getting forecast: {ex.Message}", ex);
             }
+        }
+
+        private static Exception CreateApiException(string responseJson, HttpResponseMessage response)
+        {
+            try
+            {
+                var error = JObject.Parse(responseJson)["error"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(error))
+                    return new Exception(error);
+            }
+            catch (JsonException)
+            {
+            }
+
+            return new Exception($"Request failed ({(int)response.StatusCode} {response.ReasonPhrase})");
         }
 
         public async Task<Dictionary<string, ForecastResult>> GetForecastBatchAsync(List<string> tickers, int horizon = 30)
