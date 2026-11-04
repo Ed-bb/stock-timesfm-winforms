@@ -65,18 +65,24 @@ namespace BwetForecasterWinForms
             try
             {
                 var forecastTask = _apiClient.GetForecastAsync(ticker, _horizon);
-                var historyTask = _apiClient.GetHistoryAsync(ticker, SelectedPeriod());
+                var period = SelectedPeriod();
+                var historyTask = _apiClient.GetHistoryAsync(ticker, period);
 
-                _forecast = await forecastTask;
+                var forecast = await forecastTask;
+                HistoryResult history;
                 try
                 {
-                    _history = await historyTask;
+                    history = await historyTask;
+                    if (SelectedPeriod() != period)
+                        history = await _apiClient.GetHistoryAsync(ticker, SelectedPeriod());
                 }
                 catch
                 {
-                    _history = null;
+                    history = null;
                 }
 
+                _forecast = forecast;
+                _history = history;
                 tickerBox.Text = _forecast.Ticker ?? ticker;
                 ShowForecast(_forecast);
                 SetStatus(_history == null ? "Ready (price history unavailable)" : "Ready", Color.LimeGreen);
@@ -226,13 +232,18 @@ namespace BwetForecasterWinForms
 
         private async Task OnRangeChangedAsync()
         {
-            if (_forecast == null)
+            var forecast = _forecast;
+            if (forecast == null)
                 return;
 
+            var period = SelectedPeriod();
             try
             {
-                _history = await _apiClient.GetHistoryAsync(_forecast.Ticker, SelectedPeriod());
-                ShowChart(_forecast);
+                var history = await _apiClient.GetHistoryAsync(forecast.Ticker, period);
+                if (!ReferenceEquals(forecast, _forecast) || period != SelectedPeriod())
+                    return;
+                _history = history;
+                ShowChart(forecast);
             }
             catch (Exception ex)
             {
